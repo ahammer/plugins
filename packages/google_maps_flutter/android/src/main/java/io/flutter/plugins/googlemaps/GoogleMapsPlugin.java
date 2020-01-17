@@ -31,185 +31,124 @@ import java.util.concurrent.atomic.AtomicInteger;
  * the map. A Texture drawn using GoogleMap bitmap snapshots can then be shown instead of the
  * overlay.
  */
-public class GoogleMapsPlugin implements Application.ActivityLifecycleCallbacks {
-  static final int CREATED = 1;
-  static final int STARTED = 2;
-  static final int RESUMED = 3;
-  static final int PAUSED = 4;
-  static final int STOPPED = 5;
-  static final int DESTROYED = 6;
+public class GoogleMapsPlugin {
+    static final int CREATED = 1;
+    static final int STARTED = 2;
+    static final int RESUMED = 3;
+    static final int PAUSED = 4;
+    static final int STOPPED = 5;
+    static final int DESTROYED = 6;
 
-  //private final AtomicInteger state = new AtomicInteger(0);
-  //private final int registrarActivityHashCode;
+    //private final AtomicInteger state = new AtomicInteger(0);
+    //private final int registrarActivityHashCode;
 
-  GoogleMapsDelegateFactory delegateFactory;
+    GoogleMapsDelegateFactory delegateFactory;
 
-  public static void registerWith(Registrar registrar) {
+    public static void registerWith(Registrar registrar) {
 
-    final GoogleMapsPlugin plugin = new GoogleMapsPlugin(registrar);
-    registerLifecycleCallbacks(registrar, plugin);
-    registrar
-            .platformViewRegistry()
-            .registerViewFactory(
-                    "plugins.flutter.io/google_maps", plugin.delegateFactory);
-  }
-
-  private static void registerLifecycleCallbacks(Registrar registrar, GoogleMapsPlugin plugin) {
-    if (registrar.activeContext() instanceof Activity) {
-      ((Application)(registrar.activeContext()).getApplicationContext()).registerActivityLifecycleCallbacks(plugin);
-    } else {
-      ((Application)registrar.activeContext()).registerActivityLifecycleCallbacks(plugin);
+        final GoogleMapsPlugin plugin = new GoogleMapsPlugin(registrar);
+        registerLifecycleCallbacks(registrar, plugin);
+        registrar
+                .platformViewRegistry()
+                .registerViewFactory(
+                        "plugins.flutter.io/google_maps", plugin.delegateFactory);
     }
-  }
 
-  @Override
-  public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
-    delegateFactory.onActivityCreated(activity, savedInstanceState);
-    /*
-    if (activity.hashCode() != registrarActivityHashCode) {
-      return;
+    private static void registerLifecycleCallbacks(Registrar registrar, GoogleMapsPlugin plugin) {
+        if (registrar.activeContext() instanceof Activity) {
+            ((Application) (registrar.activeContext()).getApplicationContext()).registerActivityLifecycleCallbacks(plugin.delegateFactory);
+        } else {
+            ((Application) registrar.activeContext()).registerActivityLifecycleCallbacks(plugin.delegateFactory);
+        }
     }
-    state.set(CREATED);
-    */
-  }
-
-  @Override
-  public void onActivityStarted(Activity activity) {
-    delegateFactory.onActivityStarted(activity);
-//    if (activity.hashCode() != registrarActivityHashCode) {
-//      return;
-//    }
-//    state.set(STARTED);
-  }
-
-  @Override
-  public void onActivityResumed(Activity activity) {
-    delegateFactory.onActivityResumed(activity);
-
-    //if (activity.hashCode() != registrarActivityHashCode) {
-    //  return;
-    //}
-    //state.set(RESUMED);
-  }
-
-  @Override
-  public void onActivityPaused(Activity activity) {
-    delegateFactory.onActivityPaused(activity);
-
-    //if (activity.hashCode() != registrarActivityHashCode) {
-    //  return;
-    //}
-    //state.set(PAUSED);
-  }
-
-  @Override
-  public void onActivityStopped(Activity activity) {
-    delegateFactory.onActivityStopped(activity);
-    //if (activity.hashCode() != registrarActivityHashCode) {
-    //  return;
-    //}
-    //state.set(STOPPED);
-  }
-
-  @Override
-  public void onActivitySaveInstanceState(Activity activity, Bundle outState) {}
-
-  @Override
-  public void onActivityDestroyed(Activity activity) {
-    delegateFactory.onActivityDestroyed(activity);
-
-    //if (activity.hashCode() != registrarActivityHashCode) {
-    //  return;
-    //}
-    //activity.getApplication().unregisterActivityLifecycleCallbacks(this);
-    //state.set(DESTROYED);
-  }
 
 
-
-  private GoogleMapsPlugin(Registrar registrar) {
-    delegateFactory = new GoogleMapsDelegateFactory(registrar);
-    //this.registrarActivityHashCode = registrar.activeContext().hashCode();
-  }
+    private GoogleMapsPlugin(Registrar registrar) {
+        delegateFactory = new GoogleMapsDelegateFactory(registrar);
+    }
 }
 
+// Creates Factories for different Activities
+//
+// Tracks the Active Activity
+// Assumes that only one Activity is Resumed
+// It'll always be returned by registrar.getActivity()
+// because this activity assigns registrars with the activity
+// injected
 class GoogleMapsDelegateFactory extends PlatformViewFactory implements Application.ActivityLifecycleCallbacks, ActivityGetter {
-  WeakReference<Activity> activeActivity = null;
+    WeakReference<Activity> activeActivity = null;
 
-  Map<Integer, AtomicInteger> states = new HashMap();
-  Map<Integer, GoogleMapFactory> factories = new HashMap();
-  final Registrar registrar;
+    Map<Integer, AtomicInteger> states = new HashMap();
+    Map<Integer, GoogleMapFactory> factories = new HashMap();
+    final Registrar registrar;
 
-  public GoogleMapsDelegateFactory(Registrar registrar) {
-    super(StandardMessageCodec.INSTANCE);
-    this.registrar = registrar;
-  }
-
-  @Override
-  public PlatformView create(Context context, int viewId, Object args) {
-    return factories.get(activeActivity.get().hashCode()).create(context, viewId, args);
-  }
-
-  @Override
-  public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
-    final int activityHashcode = activity.hashCode();
-    AtomicInteger state = initForActivity(activityHashcode);
-    state.set(GoogleMapsPlugin.CREATED);
-  }
-
-
-
-  private AtomicInteger initForActivity(int activityHashcode) {
-    AtomicInteger state;
-    if (!states.containsKey(activityHashcode)) {
-      state = new AtomicInteger(0);
-      states.put(activityHashcode, state);
-      Log.i("GOOGLE MAPS PLUGIN", "Registering against activeActivity "+activeActivity);
-      GoogleMapFactory factory = new GoogleMapFactory(state, new ActivityInjectedRegistrar(registrar, this));
-      factories.put(activityHashcode, factory);
-    } else {
-      state = states.get(activityHashcode);
+    public GoogleMapsDelegateFactory(Registrar registrar) {
+        super(StandardMessageCodec.INSTANCE);
+        this.registrar = registrar;
     }
-    return state;
-  }
 
-  @Override
-  public void onActivityStarted(Activity activity) {
-    setState(activity, GoogleMapsPlugin.STARTED);
-  }
+    @Override
+    public PlatformView create(Context context, int viewId, Object args) {
+        return factories.get(activeActivity.get().hashCode()).create(context, viewId, args);
+    }
 
-  private void setState(Activity activity, int newState) {
-    initForActivity(activity.hashCode()).set(newState);
-  }
+    @Override
+    public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
+        final int activityHashcode = activity.hashCode();
+        AtomicInteger state = initForActivity(activityHashcode);
+        state.set(GoogleMapsPlugin.CREATED);
+    }
 
-  @Override
-  public void onActivityResumed(Activity activity) {
-    activeActivity = new WeakReference(activity);
-    setState(activity, GoogleMapsPlugin.RESUMED);
 
-  }
+    private AtomicInteger initForActivity(int activityHashcode) {
+        AtomicInteger state;
+        if (!states.containsKey(activityHashcode)) {
+            state = new AtomicInteger(0);
+            states.put(activityHashcode, state);
+            Log.i("GOOGLE MAPS PLUGIN", "Registering against activeActivity " + activeActivity);
+            GoogleMapFactory factory = new GoogleMapFactory(state, new ActivityInjectedRegistrar(registrar, this));
+            factories.put(activityHashcode, factory);
+        } else {
+            state = states.get(activityHashcode);
+        }
+        return state;
+    }
 
-  @Override
-  public void onActivityPaused(Activity activity) {
-    setState(activity, GoogleMapsPlugin.PAUSED);
+    @Override
+    public void onActivityStarted(Activity activity) {
+        setState(activity, GoogleMapsPlugin.STARTED);
+    }
 
-  }
 
-  @Override
-  public void onActivityStopped(Activity activity) {
-    setState(activity, GoogleMapsPlugin.STOPPED);
+    @Override
+    public void onActivityResumed(Activity activity) {
+        activeActivity = new WeakReference(activity);
+        setState(activity, GoogleMapsPlugin.RESUMED);
+    }
 
-  }
+    @Override
+    public void onActivityPaused(Activity activity) {
+        setState(activity, GoogleMapsPlugin.PAUSED);
+    }
 
-  @Override
-  public void onActivitySaveInstanceState(Activity activity, Bundle outState) {
+    @Override
+    public void onActivityStopped(Activity activity) {
+        setState(activity, GoogleMapsPlugin.STOPPED);
+    }
 
-  }
+    @Override
+    public void onActivitySaveInstanceState(Activity activity, Bundle outState) {
 
-  @Override
-  public void onActivityDestroyed(Activity activity) {
-    setState(activity, GoogleMapsPlugin.DESTROYED);
-  }
+    }
+
+    @Override
+    public void onActivityDestroyed(Activity activity) {
+        setState(activity, GoogleMapsPlugin.DESTROYED);
+    }
+
+    private void setState(Activity activity, int newState) {
+        initForActivity(activity.hashCode()).set(newState);
+    }
 
     @Override
     public Activity get() {
@@ -217,9 +156,13 @@ class GoogleMapsDelegateFactory extends PlatformViewFactory implements Applicati
     }
 }
 
+/// Interface to get the Activity
 interface ActivityGetter {
     Activity get();
 }
+
+/// Wrap the Registrar interface
+/// But inject an Activity from the creator
 class ActivityInjectedRegistrar implements Registrar {
     final Registrar delegate;
     final ActivityGetter activity;
