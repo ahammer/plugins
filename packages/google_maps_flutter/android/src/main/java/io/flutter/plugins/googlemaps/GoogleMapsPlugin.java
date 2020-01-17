@@ -8,12 +8,19 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 
+import io.flutter.plugin.common.BinaryMessenger;
+import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 import io.flutter.plugin.common.StandardMessageCodec;
 import io.flutter.plugin.platform.PlatformView;
 import io.flutter.plugin.platform.PlatformViewFactory;
+import io.flutter.plugin.platform.PlatformViewRegistry;
+import io.flutter.view.FlutterView;
+import io.flutter.view.TextureRegistry;
 
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -126,8 +133,8 @@ public class GoogleMapsPlugin implements Application.ActivityLifecycleCallbacks 
   }
 }
 
-class GoogleMapsDelegateFactory extends PlatformViewFactory implements Application.ActivityLifecycleCallbacks {
-  int activeActivity = 0;
+class GoogleMapsDelegateFactory extends PlatformViewFactory implements Application.ActivityLifecycleCallbacks, ActivityGetter {
+  WeakReference<Activity> activeActivity = null;
 
   Map<Integer, AtomicInteger> states = new HashMap();
   Map<Integer, GoogleMapFactory> factories = new HashMap();
@@ -140,25 +147,26 @@ class GoogleMapsDelegateFactory extends PlatformViewFactory implements Applicati
 
   @Override
   public PlatformView create(Context context, int viewId, Object args) {
-    return factories.get(activeActivity).create(context, viewId, args);
+    return factories.get(activeActivity.get().hashCode()).create(context, viewId, args);
   }
 
   @Override
   public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
     final int activityHashcode = activity.hashCode();
     AtomicInteger state = initForActivity(activityHashcode);
-
     state.set(GoogleMapsPlugin.CREATED);
   }
+
+
 
   private AtomicInteger initForActivity(int activityHashcode) {
     AtomicInteger state;
     if (!states.containsKey(activityHashcode)) {
       state = new AtomicInteger(0);
       states.put(activityHashcode, state);
-      GoogleMapFactory factory = new GoogleMapFactory(state, registrar);
+      Log.i("GOOGLE MAPS PLUGIN", "Registering against activeActivity "+activeActivity);
+      GoogleMapFactory factory = new GoogleMapFactory(state, new ActivityInjectedRegistrar(registrar, this));
       factories.put(activityHashcode, factory);
-
     } else {
       state = states.get(activityHashcode);
     }
@@ -167,7 +175,6 @@ class GoogleMapsDelegateFactory extends PlatformViewFactory implements Applicati
 
   @Override
   public void onActivityStarted(Activity activity) {
-
     setState(activity, GoogleMapsPlugin.STARTED);
   }
 
@@ -177,14 +184,13 @@ class GoogleMapsDelegateFactory extends PlatformViewFactory implements Applicati
 
   @Override
   public void onActivityResumed(Activity activity) {
-    activeActivity = activity.hashCode();
+    activeActivity = new WeakReference(activity);
     setState(activity, GoogleMapsPlugin.RESUMED);
 
   }
 
   @Override
   public void onActivityPaused(Activity activity) {
-    activeActivity = 0;
     setState(activity, GoogleMapsPlugin.PAUSED);
 
   }
@@ -204,4 +210,97 @@ class GoogleMapsDelegateFactory extends PlatformViewFactory implements Applicati
   public void onActivityDestroyed(Activity activity) {
     setState(activity, GoogleMapsPlugin.DESTROYED);
   }
+
+    @Override
+    public Activity get() {
+        return activeActivity.get();
+    }
+}
+
+interface ActivityGetter {
+    Activity get();
+}
+class ActivityInjectedRegistrar implements Registrar {
+    final Registrar delegate;
+    final ActivityGetter activity;
+
+    ActivityInjectedRegistrar(Registrar delegate, ActivityGetter activity) {
+        this.delegate = delegate;
+        this.activity = activity;
+    }
+
+    @Override
+    public Activity activity() {
+        return activity.get();
+    }
+
+    @Override
+    public Context context() {
+        return delegate.context();
+    }
+
+    @Override
+    public Context activeContext() {
+        return delegate.activeContext();
+    }
+
+    @Override
+    public BinaryMessenger messenger() {
+        return delegate.messenger();
+    }
+
+    @Override
+    public TextureRegistry textures() {
+        return delegate.textures();
+    }
+
+    @Override
+    public PlatformViewRegistry platformViewRegistry() {
+        return delegate.platformViewRegistry();
+    }
+
+    @Override
+    public FlutterView view() {
+        return delegate.view();
+    }
+
+    @Override
+    public String lookupKeyForAsset(String asset) {
+        return delegate.lookupKeyForAsset(asset);
+    }
+
+    @Override
+    public String lookupKeyForAsset(String asset, String packageName) {
+        return delegate.lookupKeyForAsset(asset, packageName);
+    }
+
+    @Override
+    public Registrar publish(Object value) {
+        return delegate.publish(value);
+    }
+
+    @Override
+    public Registrar addRequestPermissionsResultListener(PluginRegistry.RequestPermissionsResultListener listener) {
+        return delegate.addRequestPermissionsResultListener(listener);
+    }
+
+    @Override
+    public Registrar addActivityResultListener(PluginRegistry.ActivityResultListener listener) {
+        return delegate.addActivityResultListener(listener);
+    }
+
+    @Override
+    public Registrar addNewIntentListener(PluginRegistry.NewIntentListener listener) {
+        return delegate.addNewIntentListener(listener);
+    }
+
+    @Override
+    public Registrar addUserLeaveHintListener(PluginRegistry.UserLeaveHintListener listener) {
+        return delegate.addUserLeaveHintListener(listener);
+    }
+
+    @Override
+    public Registrar addViewDestroyListener(PluginRegistry.ViewDestroyListener listener) {
+        return delegate.addViewDestroyListener(listener);
+    }
 }
