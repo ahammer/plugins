@@ -78,8 +78,8 @@ public class GoogleMapsPlugin {
 class GoogleMapsDelegateFactory extends PlatformViewFactory implements Application.ActivityLifecycleCallbacks, ActivityGetter {
     WeakReference<Activity> activeActivity = null;
 
-    Map<Integer, AtomicInteger> states = new HashMap();
-    Map<Integer, GoogleMapFactory> factories = new HashMap();
+    Map<Integer, WeakReference<AtomicInteger>> states = new HashMap();
+    GoogleMapFactory factory;
     final Registrar registrar;
 
     public GoogleMapsDelegateFactory(Registrar registrar) {
@@ -89,7 +89,7 @@ class GoogleMapsDelegateFactory extends PlatformViewFactory implements Applicati
 
     @Override
     public PlatformView create(Context context, int viewId, Object args) {
-        return factories.get(activeActivity.get().hashCode()).create(context, viewId, args);
+        return factory.create(context, viewId, args);
     }
 
     @Override
@@ -102,14 +102,13 @@ class GoogleMapsDelegateFactory extends PlatformViewFactory implements Applicati
 
     private AtomicInteger initForActivity(int activityHashcode) {
         AtomicInteger state;
-        if (!states.containsKey(activityHashcode)) {
+        if (!states.containsKey(activityHashcode) || states.get(activityHashcode).get() == null) {
             state = new AtomicInteger(0);
-            states.put(activityHashcode, state);
+            states.put(activityHashcode, new WeakReference(state));
             Log.i("GOOGLE MAPS PLUGIN", "Registering against activeActivity " + activeActivity);
-            GoogleMapFactory factory = new GoogleMapFactory(state, new ActivityInjectedRegistrar(registrar, this));
-            factories.put(activityHashcode, factory);
+            factory = new GoogleMapFactory(state, new ActivityInjectedRegistrar(registrar, this));
         } else {
-            state = states.get(activityHashcode);
+            state = states.get(activityHashcode).get();
         }
         return state;
     }
@@ -143,6 +142,7 @@ class GoogleMapsDelegateFactory extends PlatformViewFactory implements Applicati
 
     @Override
     public void onActivityDestroyed(Activity activity) {
+        if (activeActivity != null && activeActivity.get() != null && activeActivity.get().hashCode() == activity.hashCode())
         setState(activity, GoogleMapsPlugin.DESTROYED);
     }
 
