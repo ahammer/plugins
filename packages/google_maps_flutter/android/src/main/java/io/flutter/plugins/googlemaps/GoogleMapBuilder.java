@@ -27,10 +27,10 @@ class GoogleMapBuilder implements GoogleMapOptionsSink {
   private Rect padding = new Rect(0, 0, 0, 0);
 
   GoogleMapController build(
-      int id, Context context, AtomicInteger state, PluginRegistry.Registrar registrar) {
+      int id, Context context, PluginRegistry.Registrar registrar) {
     final GoogleMapController controller =
-        new GoogleMapController(id, context, state, registrar, options);
-    controller.init();
+        new GoogleMapController(id, context, registrar, options);
+    controller.init(context);
     controller.setMyLocationEnabled(myLocationEnabled);
     controller.setMyLocationButtonEnabled(myLocationButtonEnabled);
     controller.setIndoorEnabled(indoorEnabled);

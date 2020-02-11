@@ -15,13 +15,10 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class GoogleMapFactory extends PlatformViewFactory {
-
-  private final AtomicInteger mActivityState;
   private final Registrar mPluginRegistrar;
 
-  GoogleMapFactory(AtomicInteger state, Registrar registrar) {
+  GoogleMapFactory(Registrar registrar) {
     super(StandardMessageCodec.INSTANCE);
-    mActivityState = state;
     mPluginRegistrar = registrar;
   }
 
@@ -48,6 +45,6 @@ public class GoogleMapFactory extends PlatformViewFactory {
     if (params.containsKey("circlesToAdd")) {
       builder.setInitialCircles(params.get("circlesToAdd"));
     }
-    return builder.build(id, context, mActivityState, mPluginRegistrar);
+    return builder.build(id, context, mPluginRegistrar);
   }
 }

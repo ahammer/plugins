@@ -4,13 +4,6 @@
 
 package io.flutter.plugins.googlemaps;
 
-import static io.flutter.plugins.googlemaps.GoogleMapsPlugin.CREATED;
-import static io.flutter.plugins.googlemaps.GoogleMapsPlugin.DESTROYED;
-import static io.flutter.plugins.googlemaps.GoogleMapsPlugin.PAUSED;
-import static io.flutter.plugins.googlemaps.GoogleMapsPlugin.RESUMED;
-import static io.flutter.plugins.googlemaps.GoogleMapsPlugin.STARTED;
-import static io.flutter.plugins.googlemaps.GoogleMapsPlugin.STOPPED;
-
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -66,7 +59,6 @@ final class GoogleMapController
 
   private static final String TAG = "GoogleMapController";
   private final int id;
-  private final AtomicInteger activityState;
   private final MethodChannel methodChannel;
   private final PluginRegistry.Registrar registrar;
   private final MapView mapView;
@@ -94,12 +86,10 @@ final class GoogleMapController
   GoogleMapController(
       int id,
       Context context,
-      AtomicInteger activityState,
       PluginRegistry.Registrar registrar,
       GoogleMapOptions options) {
     this.id = id;
     this.context = context;
-    this.activityState = activityState;
     this.registrar = registrar;
     this.mapView = new MapView(context, options);
     this.density = context.getResources().getDisplayMetrics().density;
@@ -118,42 +108,13 @@ final class GoogleMapController
     return mapView;
   }
 
-  void init() {
-    switch (activityState.get()) {
-      case STOPPED:
-        mapView.onCreate(null);
-        mapView.onStart();
-        mapView.onResume();
-        mapView.onPause();
-        mapView.onStop();
-        break;
-      case PAUSED:
-        mapView.onCreate(null);
-        mapView.onStart();
-        mapView.onResume();
-        mapView.onPause();
-        break;
-      case RESUMED:
-        mapView.onCreate(null);
-        mapView.onStart();
-        mapView.onResume();
-        break;
-      case STARTED:
-        mapView.onCreate(null);
-        mapView.onStart();
-        break;
-      case CREATED:
-        mapView.onCreate(null);
-        break;
-      case DESTROYED:
-        // Nothing to do, the activity has been completely destroyed.
-        break;
-      default:
-        throw new IllegalArgumentException(
-            "Cannot interpret " + activityState.get() + " as an activity state");
-    }
-    registrar.activity().getApplication().registerActivityLifecycleCallbacks(this);
+  void init(Context context) {
+
+    ((Application) context.getApplicationContext()).registerActivityLifecycleCallbacks(this);
     mapView.getMapAsync(this);
+    mapView.onCreate(null);
+    mapView.onResume();
+
   }
 
   private void moveCamera(CameraUpdate cameraUpdate) {
