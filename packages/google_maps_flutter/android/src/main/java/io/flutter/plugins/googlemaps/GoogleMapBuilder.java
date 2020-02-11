@@ -28,6 +28,7 @@ class GoogleMapBuilder implements GoogleMapOptionsSink {
 
   GoogleMapController build(
       int id, Context context, AtomicInteger state, PluginRegistry.Registrar registrar) {
+    options.liteMode(true);
     final GoogleMapController controller =
         new GoogleMapController(id, context, state, registrar, options);
     controller.init();
