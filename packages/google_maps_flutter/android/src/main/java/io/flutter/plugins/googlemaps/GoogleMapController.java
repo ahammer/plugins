@@ -66,6 +66,7 @@ final class GoogleMapController
 
   private static final String TAG = "GoogleMapController";
   private final int id;
+
   private final AtomicInteger activityState;
   private final MethodChannel methodChannel;
   private final PluginRegistry.Registrar registrar;
@@ -106,7 +107,7 @@ final class GoogleMapController
     methodChannel =
         new MethodChannel(registrar.messenger(), "plugins.flutter.io/google_maps_" + id);
     methodChannel.setMethodCallHandler(this);
-    this.registrarActivityHashCode = registrar.activity().hashCode();
+    this.registrarActivityHashCode = GoogleMapsDelegateFactory.activeActivity.get().hashCode();
     this.markersController = new MarkersController(methodChannel);
     this.polygonsController = new PolygonsController(methodChannel);
     this.polylinesController = new PolylinesController(methodChannel, density);

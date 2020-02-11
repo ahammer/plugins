@@ -76,7 +76,7 @@ public class GoogleMapsPlugin {
 // because this activity assigns registrars with the activity
 // injected
 class GoogleMapsDelegateFactory extends PlatformViewFactory implements Application.ActivityLifecycleCallbacks, ActivityGetter {
-    WeakReference<Activity> activeActivity = null;
+    static WeakReference<Activity> activeActivity = null;
 
     Map<Integer, AtomicInteger> states = new HashMap();
     Map<Integer, GoogleMapFactory> factories = new HashMap();
