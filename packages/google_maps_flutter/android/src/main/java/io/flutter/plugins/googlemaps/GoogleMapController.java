@@ -34,6 +34,8 @@ import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.Polyline;
+
+import io.flutter.app.FlutterActivity;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.PluginRegistry;
@@ -80,7 +82,6 @@ final class GoogleMapController
   private boolean disposed = false;
   private final float density;
   private MethodChannel.Result mapReadyResult;
-  private final int registrarActivityHashCode;
   private final Context context;
   private final MarkersController markersController;
   private final PolygonsController polygonsController;
@@ -106,7 +107,7 @@ final class GoogleMapController
     methodChannel =
         new MethodChannel(registrar.messenger(), "plugins.flutter.io/google_maps_" + id);
     methodChannel.setMethodCallHandler(this);
-    this.registrarActivityHashCode = registrar.activity().hashCode();
+
     this.markersController = new MarkersController(methodChannel);
     this.polygonsController = new PolygonsController(methodChannel);
     this.polylinesController = new PolylinesController(methodChannel, density);
@@ -152,7 +153,7 @@ final class GoogleMapController
         throw new IllegalArgumentException(
             "Cannot interpret " + activityState.get() + " as an activity state");
     }
-    registrar.activity().getApplication().registerActivityLifecycleCallbacks(this);
+    GoogleMapsPlugin.getActivity().getApplication().registerActivityLifecycleCallbacks(this);
     mapView.getMapAsync(this);
   }
 
@@ -472,7 +473,7 @@ final class GoogleMapController
     disposed = true;
     methodChannel.setMethodCallHandler(null);
     mapView.onDestroy();
-    registrar.activity().getApplication().unregisterActivityLifecycleCallbacks(this);
+    GoogleMapsPlugin.getActivity().getApplication().unregisterActivityLifecycleCallbacks(this);
   }
 
   // @Override
@@ -491,7 +492,7 @@ final class GoogleMapController
 
   @Override
   public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
-    if (disposed || activity.hashCode() != registrarActivityHashCode) {
+    if (disposed || !(activity instanceof FlutterActivity)) {
       return;
     }
     mapView.onCreate(savedInstanceState);
@@ -499,7 +500,7 @@ final class GoogleMapController
 
   @Override
   public void onActivityStarted(Activity activity) {
-    if (disposed || activity.hashCode() != registrarActivityHashCode) {
+    if (disposed || !(activity instanceof FlutterActivity)) {
       return;
     }
     mapView.onStart();
@@ -507,7 +508,7 @@ final class GoogleMapController
 
   @Override
   public void onActivityResumed(Activity activity) {
-    if (disposed || activity.hashCode() != registrarActivityHashCode) {
+    if (disposed || !(activity instanceof FlutterActivity)) {
       return;
     }
     mapView.onResume();
@@ -515,7 +516,7 @@ final class GoogleMapController
 
   @Override
   public void onActivityPaused(Activity activity) {
-    if (disposed || activity.hashCode() != registrarActivityHashCode) {
+    if (disposed || !(activity instanceof FlutterActivity)) {
       return;
     }
     mapView.onPause();
@@ -523,7 +524,7 @@ final class GoogleMapController
 
   @Override
   public void onActivityStopped(Activity activity) {
-    if (disposed || activity.hashCode() != registrarActivityHashCode) {
+    if (disposed || !(activity instanceof FlutterActivity)) {
       return;
     }
     mapView.onStop();
@@ -531,7 +532,7 @@ final class GoogleMapController
 
   @Override
   public void onActivitySaveInstanceState(Activity activity, Bundle outState) {
-    if (disposed || activity.hashCode() != registrarActivityHashCode) {
+    if (disposed || !(activity instanceof FlutterActivity)) {
       return;
     }
     mapView.onSaveInstanceState(outState);
@@ -539,7 +540,7 @@ final class GoogleMapController
 
   @Override
   public void onActivityDestroyed(Activity activity) {
-    if (disposed || activity.hashCode() != registrarActivityHashCode) {
+    if (disposed || !(activity instanceof FlutterActivity)) {
       return;
     }
     mapView.onDestroy();

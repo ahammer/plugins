@@ -7,7 +7,11 @@ package io.flutter.plugins.googlemaps;
 import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
+
+import io.flutter.app.FlutterActivity;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
+
+import java.lang.ref.WeakReference;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -24,16 +28,19 @@ public class GoogleMapsPlugin implements Application.ActivityLifecycleCallbacks 
   static final int STOPPED = 5;
   static final int DESTROYED = 6;
   private final AtomicInteger state = new AtomicInteger(0);
-  private final int registrarActivityHashCode;
+
+  private static WeakReference<FlutterActivity> currentActivity;
+
+  public static FlutterActivity getActivity() {
+    return currentActivity.get();
+  }
+
 
   public static void registerWith(Registrar registrar) {
-    if (registrar.activity() == null) {
-      // When a background flutter view tries to register the plugin, the registrar has no activity.
-      // We stop the registration process as this plugin is foreground only.
-      return;
-    }
-    final GoogleMapsPlugin plugin = new GoogleMapsPlugin(registrar);
-    registrar.activity().getApplication().registerActivityLifecycleCallbacks(plugin);
+    final GoogleMapsPlugin plugin = new GoogleMapsPlugin();
+
+    getApplicationUsingReflection().registerActivityLifecycleCallbacks(plugin);
+
     registrar
         .platformViewRegistry()
         .registerViewFactory(
@@ -42,42 +49,44 @@ public class GoogleMapsPlugin implements Application.ActivityLifecycleCallbacks 
 
   @Override
   public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
-    if (activity.hashCode() != registrarActivityHashCode) {
-      return;
+    if (activity instanceof FlutterActivity) {
+      FlutterActivity fa = (FlutterActivity) activity;
+      currentActivity = new WeakReference(fa);
+      state.set(CREATED);
+
     }
-    state.set(CREATED);
   }
 
   @Override
   public void onActivityStarted(Activity activity) {
-    if (activity.hashCode() != registrarActivityHashCode) {
-      return;
+    if (activity instanceof FlutterActivity) {
+      FlutterActivity fa = (FlutterActivity) activity;
+      currentActivity = new WeakReference(fa);
+      state.set(STARTED);
     }
-    state.set(STARTED);
   }
 
   @Override
   public void onActivityResumed(Activity activity) {
-    if (activity.hashCode() != registrarActivityHashCode) {
-      return;
+    if (activity instanceof FlutterActivity) {
+      FlutterActivity fa = (FlutterActivity) activity;
+      currentActivity = new WeakReference(fa);
+      state.set(RESUMED);
     }
-    state.set(RESUMED);
   }
 
   @Override
   public void onActivityPaused(Activity activity) {
-    if (activity.hashCode() != registrarActivityHashCode) {
-      return;
+    if (activity instanceof FlutterActivity) {
+      state.set(PAUSED);
     }
-    state.set(PAUSED);
   }
 
   @Override
   public void onActivityStopped(Activity activity) {
-    if (activity.hashCode() != registrarActivityHashCode) {
-      return;
+    if (activity instanceof FlutterActivity) {
+      state.set(STOPPED);
     }
-    state.set(STOPPED);
   }
 
   @Override
@@ -85,14 +94,24 @@ public class GoogleMapsPlugin implements Application.ActivityLifecycleCallbacks 
 
   @Override
   public void onActivityDestroyed(Activity activity) {
-    if (activity.hashCode() != registrarActivityHashCode) {
+    if (!(activity instanceof FlutterActivity)) {
       return;
     }
     activity.getApplication().unregisterActivityLifecycleCallbacks(this);
     state.set(DESTROYED);
   }
 
-  private GoogleMapsPlugin(Registrar registrar) {
-    this.registrarActivityHashCode = registrar.activity().hashCode();
+  private GoogleMapsPlugin() {
+  }
+
+  private static Application getApplicationUsingReflection()  {
+    try {
+      return (Application) Class.forName("android.app.ActivityThread")
+              .getMethod("currentApplication").invoke(null, (Object[]) null);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return null;
+    }
   }
 }
+
