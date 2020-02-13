@@ -6,9 +6,9 @@ package io.flutter.plugins.googlemaps;
 
 import android.app.Activity;
 import android.app.Application;
+import android.content.Context;
 import android.os.Bundle;
 
-import io.flutter.app.FlutterActivity;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 import java.lang.ref.WeakReference;
@@ -29,9 +29,9 @@ public class GoogleMapsPlugin implements Application.ActivityLifecycleCallbacks 
   static final int DESTROYED = 6;
   private final AtomicInteger state = new AtomicInteger(0);
 
-  private static WeakReference<FlutterActivity> currentActivity;
+  private static WeakReference<Activity> currentActivity;
 
-  public static FlutterActivity getActivity() {
+  public static Activity getActivity() {
     return currentActivity.get();
   }
 
@@ -49,9 +49,8 @@ public class GoogleMapsPlugin implements Application.ActivityLifecycleCallbacks 
 
   @Override
   public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
-    if (activity instanceof FlutterActivity) {
-      FlutterActivity fa = (FlutterActivity) activity;
-      currentActivity = new WeakReference(fa);
+    if ((isFlutterActivity(activity))) {
+      currentActivity = new WeakReference(activity);
       state.set(CREATED);
 
     }
@@ -59,32 +58,30 @@ public class GoogleMapsPlugin implements Application.ActivityLifecycleCallbacks 
 
   @Override
   public void onActivityStarted(Activity activity) {
-    if (activity instanceof FlutterActivity) {
-      FlutterActivity fa = (FlutterActivity) activity;
-      currentActivity = new WeakReference(fa);
+    if ((isFlutterActivity(activity))) {
+      currentActivity = new WeakReference(activity);
       state.set(STARTED);
     }
   }
 
   @Override
   public void onActivityResumed(Activity activity) {
-    if (activity instanceof FlutterActivity) {
-      FlutterActivity fa = (FlutterActivity) activity;
-      currentActivity = new WeakReference(fa);
+    if (isFlutterActivity(activity)) {
+      currentActivity = new WeakReference(activity);
       state.set(RESUMED);
     }
   }
 
   @Override
   public void onActivityPaused(Activity activity) {
-    if (activity instanceof FlutterActivity) {
+    if (isFlutterActivity(activity)) {
       state.set(PAUSED);
     }
   }
 
   @Override
   public void onActivityStopped(Activity activity) {
-    if (activity instanceof FlutterActivity) {
+    if (isFlutterActivity(activity)) {
       state.set(STOPPED);
     }
   }
@@ -94,11 +91,10 @@ public class GoogleMapsPlugin implements Application.ActivityLifecycleCallbacks 
 
   @Override
   public void onActivityDestroyed(Activity activity) {
-    if (!(activity instanceof FlutterActivity)) {
-      return;
+    if ((isFlutterActivity(activity))) {
+      activity.getApplication().unregisterActivityLifecycleCallbacks(this);
+      state.set(DESTROYED);
     }
-    activity.getApplication().unregisterActivityLifecycleCallbacks(this);
-    state.set(DESTROYED);
   }
 
   private GoogleMapsPlugin() {
@@ -112,6 +108,10 @@ public class GoogleMapsPlugin implements Application.ActivityLifecycleCallbacks 
       e.printStackTrace();
       return null;
     }
+  }
+
+  public static boolean isFlutterActivity(Context context) {
+    return (context instanceof io.flutter.embedding.android.FlutterActivity || context instanceof  io.flutter.app.FlutterActivity);
   }
 }
 

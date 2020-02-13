@@ -10,6 +10,7 @@ import static io.flutter.plugins.googlemaps.GoogleMapsPlugin.PAUSED;
 import static io.flutter.plugins.googlemaps.GoogleMapsPlugin.RESUMED;
 import static io.flutter.plugins.googlemaps.GoogleMapsPlugin.STARTED;
 import static io.flutter.plugins.googlemaps.GoogleMapsPlugin.STOPPED;
+import static io.flutter.plugins.googlemaps.GoogleMapsPlugin.isFlutterActivity;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -35,7 +36,6 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.Polyline;
 
-import io.flutter.app.FlutterActivity;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.PluginRegistry;
@@ -492,7 +492,7 @@ final class GoogleMapController
 
   @Override
   public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
-    if (disposed || !(activity instanceof FlutterActivity)) {
+    if (disposed || !(isFlutterActivity(activity))) {
       return;
     }
     mapView.onCreate(savedInstanceState);
@@ -500,7 +500,7 @@ final class GoogleMapController
 
   @Override
   public void onActivityStarted(Activity activity) {
-    if (disposed || !(activity instanceof FlutterActivity)) {
+    if (disposed || !(isFlutterActivity(activity))) {
       return;
     }
     mapView.onStart();
@@ -508,7 +508,7 @@ final class GoogleMapController
 
   @Override
   public void onActivityResumed(Activity activity) {
-    if (disposed || !(activity instanceof FlutterActivity)) {
+    if (disposed || !(isFlutterActivity(activity))) {
       return;
     }
     mapView.onResume();
@@ -516,7 +516,7 @@ final class GoogleMapController
 
   @Override
   public void onActivityPaused(Activity activity) {
-    if (disposed || !(activity instanceof FlutterActivity)) {
+    if (disposed || !(isFlutterActivity(activity))) {
       return;
     }
     mapView.onPause();
@@ -524,7 +524,7 @@ final class GoogleMapController
 
   @Override
   public void onActivityStopped(Activity activity) {
-    if (disposed || !(activity instanceof FlutterActivity)) {
+    if (disposed || !(isFlutterActivity(activity))) {
       return;
     }
     mapView.onStop();
@@ -532,7 +532,7 @@ final class GoogleMapController
 
   @Override
   public void onActivitySaveInstanceState(Activity activity, Bundle outState) {
-    if (disposed || !(activity instanceof FlutterActivity)) {
+    if (disposed || !(isFlutterActivity(activity))) {
       return;
     }
     mapView.onSaveInstanceState(outState);
@@ -540,7 +540,7 @@ final class GoogleMapController
 
   @Override
   public void onActivityDestroyed(Activity activity) {
-    if (disposed || !(activity instanceof FlutterActivity)) {
+    if (disposed || !(isFlutterActivity(activity))) {
       return;
     }
     mapView.onDestroy();
